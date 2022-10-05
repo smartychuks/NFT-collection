@@ -26,10 +26,12 @@ export default function Home() {
    */
   const presaleMint = async () => {
     try {
+
+
       
       const signer = await getProviderOrSigner(true);
       
-      const nftContract = new Contract(NFT_CONTRACT_ADDRESS, abi, signer);
+      const nftContract = new Contract(NFT_CONTRACT_ADDRESS, NFT_CONTRACT_ABI, signer);
       // call the presaleMint from the contract, only whitelisted addresses would be able to mint
       const tx = await nftContract.presaleMint({
         
@@ -85,7 +87,7 @@ export default function Home() {
    */
   const startPresale = async () => {
     try {
-      // We need a Signer here since this is a 'write' transaction.
+      pausePresale();// to unpause the contract
       const signer = await getProviderOrSigner(true);
       
       const nftContract = new Contract(NFT_CONTRACT_ADDRESS, NFT_CONTRACT_ABI, signer);
@@ -97,6 +99,25 @@ export default function Home() {
       setLoading(false);
       
       await checkIfPresaleStarted();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const pausePresale = async (val = false) => {
+    try {
+      // We need a Signer here since this is a 'write' transaction.
+      const signer = await getProviderOrSigner(true);
+      
+      const nftContract = new Contract(NFT_CONTRACT_ADDRESS, NFT_CONTRACT_ABI, signer);
+      
+      const tx = await nftContract.setPaused(val);
+      setLoading(true);
+      
+      await tx.wait();
+      setLoading(false);
+      
+      //await checkIfPresalePaused();
     } catch (err) {
       console.error(err);
     }
@@ -151,21 +172,20 @@ export default function Home() {
    */
   const getOwner = async () => {
     try {
-      // Get the provider from web3Modal, which in our case is MetaMask
-      // No need for the Signer here, as we are only reading state from the blockchain
+      
       const provider = await getProviderOrSigner();
-      // We connect to the Contract using a Provider, so we will only
-      // have read-only access to the Contract
+     
       const nftContract = new Contract(NFT_CONTRACT_ADDRESS, NFT_CONTRACT_ABI, provider);
-      // call the owner function from the contract
+     
       const _owner = await nftContract.owner();
-      // We will get the signer now to extract the address of the currently connected MetaMask account
+     
       const signer = await getProviderOrSigner(true);
-      // Get the address associated to the signer which is connected to  MetaMask
+         
+      console.log(_owner);  
+      
       const address = await signer.getAddress();
       if (address.toLowerCase() === _owner.toLowerCase()) {
-        setIsOwner(true);
-        
+        setIsOwner(true);   
       }
     } catch (err) {
       console.error(err.message);
@@ -227,6 +247,7 @@ export default function Home() {
         disableInjectedProvider: false,
       });
       connectWallet();
+      getOwner();
 
       // Check if presale has started and ended
       const _presaleStarted = checkIfPresaleStarted();
@@ -289,7 +310,7 @@ export default function Home() {
         <div>
           <div className={styles.description}>
             Presale has started!!! If your address is whitelisted, Mint a Crypto
-            Dev 🥳
+            Mania 🥳
           </div>
           <button className={styles.button} onClick={presaleMint}>
             Presale Mint 🚀
@@ -305,17 +326,22 @@ export default function Home() {
           Public Mint 🚀
         </button>
       );
+
     }
+  
   };
 
   const renderOwnerButton = () => {
 
     if (isOwner) {
-      return (
+      return (<>
         <button className={styles.button} onClick={startPresale}>
           Start Presale!
+        </button> <br />
+        <button className={styles.button} onClick={pausePresale}>
+          Pause presale
         </button>
-      );
+      </>);
     }
     
   }
@@ -336,10 +362,10 @@ export default function Home() {
           <div className={styles.description}>
             {tokenIdsMinted}/20 have been minted
           </div>
-            {renderButton()}
+            {renderButton()} <br />
             {renderOwnerButton()}
           </div>
-        <div>
+        <div class>
           <img className={styles.image} src="./cryptomania/0.svg" />
         </div>
       </div>
